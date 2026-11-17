@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>صندوق بَيدر: بيئة تشغيل معزولة للوكيل</title>
+<style>
+  :root { --ink: #1b2540; --paper: #f6f4ee; --line: #d9d5c8; --teal: #0f766e; --coral: #b42318; --amber: #8a5a00; --navy: #1b2540; }
+  * { box-sizing: border-box; }
+  body { font-family: "IBM Plex Sans Arabic", system-ui, sans-serif; margin: 0; background: var(--paper); color: var(--ink); line-height: 1.75; font-size: 16px; }
+  header { background: var(--navy); color: #fff; padding: 14px 16px; }
+  header h1 { font-size: 21px; margin: 0; }
+  header p { margin: 2px 0 0; font-size: 14px; opacity: .9; }
+  main { max-width: 980px; margin: 0 auto; padding: 12px 14px 60px; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0; }
+  nav.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
+  nav.tabs button { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+  nav.tabs button[aria-selected="true"] { background: var(--teal); color: #fff; border-color: var(--teal); }
+  button { font: inherit; font-weight: 600; padding: 7px 14px; border: 0; border-radius: 8px; background: var(--teal); color: #fff; cursor: pointer; }
+  button.alt { background: #fff; color: var(--ink); border: 1px solid #b9b4a4; }
+  button.bad { background: var(--coral); }
+  button:disabled { opacity: .45; cursor: default; }
+  input, select, textarea { font: inherit; padding: 6px 9px; border: 1px solid #b9b4a4; border-radius: 8px; background: #fff; color: inherit; max-width: 100%; }
+  textarea { width: 100%; min-height: 64px; }
+  label { display: block; font-weight: 600; margin-top: 10px; }
+  section.panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; margin: 10px 0; }
+  h2 { font-size: 19px; margin: 4px 0 8px; }
+  h3 { font-size: 16px; margin: 14px 0 4px; }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+  th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: start; vertical-align: top; }
+  th { background: #efece2; }
+  .ltr { direction: ltr; unicode-bidi: isolate; display: inline-block; text-align: left; }
+  td.l { direction: ltr; text-align: left; overflow-wrap: anywhere; font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+  .note { background: #eef6f5; border: 1px solid #b7d9d5; border-radius: 10px; padding: 8px 12px; font-size: 14.5px; margin: 8px 0; }
+  .warn { background: #fdf0ee; border-color: #efc2bc; }
+  .ok { color: var(--teal); font-weight: 700; }
+  .no { color: var(--coral); font-weight: 700; }
+  .wait { color: var(--amber); font-weight: 700; }
+  .pending { border: 2px solid var(--amber); background: #fff8e8; border-radius: 12px; padding: 10px 14px; margin: 10px 0; }
+  pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #f3f1ea; border-radius: 8px; padding: 8px 10px; margin: 6px 0; font-size: 14px; font-family: inherit; }
+  .hid { color: #b42318; }
+  .chips label { display: inline-block; font-weight: 400; margin: 2px 0 2px 12px; }
+  tr.k-denied td, tr.k-rejected td, tr.k-error td { background: #fdf0ee; }
+  tr.k-approval_requested td { background: #fff8e8; }
+  tr.k-approved td, tr.k-executed td { background: #eef6f5; }
+  small { color: #55607a; }
+</style>
+</head>
+<body>
+<header>
+  <h1>صندوق بَيدر: بيئة تشغيل معزولة للوكيل «ساعِد»</h1>
+  <p>بريد وتقويم وملفات ومدفوعات اصطناعية لمؤسسة افتراضية. لا شيء هنا يتصل ببريدك أو ملفاتك، ولا يخرج من هذه الصفحة إلا ما ترسله أنت إلى نموذج مستضاف إن اخترته.</p>
+</header>
+<main>
+  <div class="bar">
+    <select id="preset" aria-label="حالة البداية"></select>
+    <button id="load" type="button">حمّل حالة البداية</button>
+    <label style="margin:0;font-weight:400">اسمك في سجل الموافقات: <input id="who" size="14" value="منسق البرنامج"></label>
+  </div>
+  <details class="note"><summary><b>الوكيل:</b> <span id="agentName"></span></summary>
+    <p><label style="font-weight:400"><input type="radio" name="agent" value="scripted" checked> الوكيل المكتوب: إجراء ثابت قواعده معلنة، لا يحتاج إلى مفتاح، ويطيع كل تعليمة مدسوسة يقرؤها.</label>
+    <label style="font-weight:400"><input type="radio" name="agent" value="hosted"> نموذج مستضاف مجاني يوفره المدرب، عبر عنوان متوافق مع واجهة المحادثة ذات الأدوات.</label></p>
+    <p>العنوان <input id="mUrl" class="ltr" size="30" placeholder="https://…/v1"> معرّف النموذج <input id="mModel" class="ltr" size="22"> المفتاح <input id="mKey" class="ltr" type="password" size="16"></p>
+    <p><small>المفتاح يبقى في هذه الصفحة ولا يُحفظ. مع نموذج مستضاف يخرج الموجز وما يقرؤه الوكيل من الصندوق إلى مزوّد النموذج: كله اصطناعي، فلا تضف إليه شيئًا حقيقيًا.</small></p>
+  </details>
+  <nav class="tabs" id="tabs" role="tablist"></nav>
+  <div id="view"></div>
+</main>
+<script>
+/*WORLD*/
+/*CORE*/
+/*PRESETS*/
+</script>
+<script>
+(function () {
+  'use strict';
+  var WD = SB_WORLD, st = null, run = null, model = null, tab = 'brief', setup = { task: 'report', brief: SB.emptyBrief(), thin: false }, own = '', showRead = false, logRun = '';
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) { return String(s === undefined || s === null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
+  var ltr = function (s) { return '<span class="ltr">' + esc(s) + '</span>'; };
+  var TABS = [['brief', 'المهمة والموجز'], ['perms', 'الصلاحيات والموافقات'], ['run', 'التشغيل'], ['log', 'السجل'], ['sched', 'الجدولة'], ['box', 'الصندوق'], ['mem', 'ذاكرة الوكيل']];
+  var STATUS = { running: 'يعمل', waiting: 'ينتظر موافقتك', asked: 'توقف ليسألك', done: 'انتهى', limit: 'توقف عند حد الخطوات', failed: 'تعذر الاتصال بالنموذج' };
+
+  function who() { return $('who').value.trim() || WD.PEOPLE.you.name; }
+  function agentKind() { return document.querySelector('input[name=agent]:checked').value; }
+  function makeModel() {
+    if (agentKind() === 'hosted') return SB.hostedModel({ url: $('mUrl').value.trim(), model: $('mModel').value.trim(), key: $('mKey').value.trim() });
+    return SB.scriptedAgent();
+  }
+  function download(name, text, type) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type: type || 'text/plain;charset=utf-8' }));
+    a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  }
+
+  async function load(id) {
+    st = await SB.preset(id);
+    setup = st.setup; run = null; model = null; own = ''; logRun = '';
+    tab = 'brief'; draw();
+  }
+
+  /* ---------- views ---------- */
+  function vBrief() {
+    var b = setup.brief || SB.emptyBrief(), h = '<section class="panel"><h2>المهمة</h2>';
+    h += '<p><select id="task">' + Object.keys(WD.TASKS).map(function (k) { return '<option value="' + k + '"' + (setup.task === k ? ' selected' : '') + '>' + esc(WD.TASKS[k].label) + '</option>'; }).join('') + '<option value="own"' + (setup.task === 'own' ? ' selected' : '') + '>مهمة من عملي (تحتاج إلى نموذج مستضاف)</option></select></p>';
+    h += '<p class="note"><b>الطلب كما وصل:</b> ' + esc(setup.task === 'own' ? 'اكتب مهمتك في الموجز أدناه.' : WD.TASKS[setup.task].request) + '</p>';
+    h += '<label style="font-weight:400"><input type="checkbox" id="thin"' + (setup.thin ? ' checked' : '') + '> شغّل بالطلب المختصر وحده، بلا موجز</label></section>';
+    h += '<section class="panel"><h2>موجز التفويض: سبعة بنود</h2>';
+    h += '<label>1 · ' + esc(SB.BRIEF_POINTS[0].label) + '</label><textarea id="b_goal">' + esc(b.goal) + '</textarea>';
+    h += '<label>2 · ' + esc(SB.BRIEF_POINTS[1].label) + '</label><textarea id="b_context">' + esc(b.context) + '</textarea>';
+    h += '<label>3 · ' + esc(SB.BRIEF_POINTS[2].label) + '</label><div class="chips">' + WD.FOLDERS.map(function (f) { return '<label><input type="checkbox" data-src="' + f.key + '"' + (b.sources.indexOf(f.key) >= 0 ? ' checked' : '') + '> ' + esc(f.label) + '</label>'; }).join('') + '</div>';
+    h += '<label>4 · ' + esc(SB.BRIEF_POINTS[3].label) + '</label><div class="chips">' + Object.keys(SB.ACTIONS).map(function (k) { return '<label><input type="checkbox" data-no="' + k + '"' + (b.forbidden.indexOf(k) >= 0 ? ' checked' : '') + '> ' + SB.ACTIONS[k] + '</label>'; }).join('') + '</div><textarea id="b_forbidden_note" placeholder="وما سوى ذلك مما لا يفعله">' + esc(b.forbidden_note) + '</textarea>';
+    h += '<label>5 · ' + esc(SB.BRIEF_POINTS[4].label) + '</label><textarea id="b_stop">' + esc(b.stop) + '</textarea>';
+    h += '<label>6 · ' + esc(SB.BRIEF_POINTS[5].label) + '</label><textarea id="b_format">' + esc(b.format) + '</textarea>';
+    h += '<label>7 · ' + esc(SB.BRIEF_POINTS[6].label) + '</label><textarea id="b_check">' + esc(b.check) + '</textarea>';
+    h += '<div class="bar"><button id="chk" type="button">افحص الموجز</button><button id="saveBrief" class="alt" type="button">نزّل الموجز ملفًا</button></div><div id="chkOut"></div></section>';
+    return h;
+  }
+  function readBrief() {
+    if (!$('b_goal')) return;
+    var b = SB.emptyBrief();
+    ['goal', 'context', 'forbidden_note', 'stop', 'format', 'check'].forEach(function (k) { b[k] = $('b_' + k).value; });
+    document.querySelectorAll('[data-src]').forEach(function (c) { if (c.checked) b.sources.push(c.getAttribute('data-src')); });
+    document.querySelectorAll('[data-no]').forEach(function (c) { if (c.checked) b.forbidden.push(c.getAttribute('data-no')); });
+    setup.brief = b; setup.task = $('task').value; setup.thin = $('thin').checked;
+  }
+  function grantState(g) {
+    if (g.revoked) return '<span class="no">أُلغيت</span>';
+    if (g.until !== null && Date.now() > g.until) return '<span class="no">انتهت مدتها</span>';
+    if (g.runs_left !== null) return g.runs_left > 0 ? '<span class="wait">باقٍ لها: ' + g.runs_left + ' تشغيل</span>' : '<span class="no">تنتهي بعد التشغيل الجاري أو انتهت</span>';
+    return '<span class="ok">سارية</span>';
+  }
+  function vPerms() {
+    var h = '<section class="panel"><h2>صلاحيات الموصِّلات الممنوحة للوكيل</h2><div class="scroll"><table><tr><th>#</th><th>الموصِّل</th><th>المستوى</th><th>النطاق</th><th>ما عدا</th><th>الحالة</th><th></th></tr>';
+    h += st.grants.map(function (g) { return '<tr><td>' + g.id + '</td><td>' + SB.CONNECTORS[g.connector] + '</td><td>' + SB.SCOPE_AR[g.scope] + '</td><td class="l">' + esc(g.folder) + '</td><td class="l">' + esc(g.except) + '</td><td>' + grantState(g) + '</td><td>' + (g.revoked ? '' : '<button class="bad" data-revoke="' + g.id + '" type="button">ألغِ</button>') + '</td></tr>'; }).join('') || '<tr><td colspan="7">لا صلاحية ممنوحة.</td></tr>';
+    h += '</table></div><h3>امنح صلاحية</h3><div class="bar"><select id="gC">' + Object.keys(SB.CONNECTORS).map(function (c) { return '<option value="' + c + '">' + SB.CONNECTORS[c] + '</option>'; }).join('') + '</select>';
+    h += '<select id="gS"><option value="read">قراءة</option><option value="write">كتابة (يُتراجع عنها)</option><option value="act">تصرّف (إرسال، حذف، دفع، نشر)</option></select>';
+    h += '<input id="gF" class="ltr" size="16" list="folders" placeholder="المجلد، أو * للكل"><datalist id="folders"><option value="*"><option value="inbox"><option value="external"><option value="programme"><option value="programme/panels"><option value="reports"><option value="partners"><option value="announcements"><option value="archive"><option value="archive/tmp"><option value="hr"></datalist>';
+    h += '<input id="gX" class="ltr" size="14" placeholder="ما عدا (اختياري)"><input id="gR" type="number" min="1" size="4" style="width:9em" placeholder="صالحة لعدد تشغيلات"><button id="gAdd" type="button">امنح</button><button id="gAll" class="alt" type="button">امنح كل شيء على كل موصِّل</button></div>';
+    h += '<p><small>النطاق اسم مجلد بريد (inbox، external) أو مسار مجلد ملفات (programme). «تصرّف» تشمل الكتابة والقراءة، و«كتابة» تشمل القراءة.</small></p></section>';
+    h += '<section class="panel"><h2>الموافقة قبل ما لا رجعة فيه</h2><div class="chips">' + Object.keys(SB.ACTIONS).map(function (k) { return '<label><input type="checkbox" data-ap="' + k + '"' + (st.approve[k] ? ' checked' : '') + '> ' + SB.ACTIONS[k] + ' ينتظر موافقتي</label>'; }).join('') + '</div>';
+    h += '<h3>المستلمون</h3><select id="rcp"><option value="any"' + (st.recipients === 'any' ? ' selected' : '') + '>أي عنوان</option><option value="internal"' + (st.recipients === 'internal' ? ' selected' : '') + '>عناوين المؤسسة فقط (' + WD.DOMAIN + ')</option></select></section>';
+    return h;
+  }
+  function vRun() {
+    var h = '<section class="panel"><h2>التشغيل</h2><div class="bar"><button id="go" type="button"' + (run && (run.status === 'running' || run.status === 'waiting') ? ' disabled' : '') + '>شغّل الوكيل</button><button id="resetWorld" class="alt" type="button">أعد الصندوق إلى حالته الأولى وأبقِ الصلاحيات</button></div>';
+    if (run) {
+      h += '<p>التشغيل <b>' + run.id + '</b> · الحالة: <b class="' + (run.status === 'done' ? 'ok' : 'wait') + '">' + STATUS[run.status] + '</b> · طلبات الأدوات: ' + run.calls + ' · المرفوض منها: ' + run.denied + '</p>';
+      if (run.status === 'waiting') {
+        var c = run.pending, t = SB.TOOL[c.name];
+        h += '<div class="pending"><b>ينتظر موافقتك: ' + esc(t.ar) + ' (' + SB.ACTIONS[t.action] + ')</b>' + Object.keys(c.args).map(function (k) { return '<pre><b>' + esc(SB.TOOL[c.name].p[k] || k) + ':</b> ' + esc(Array.isArray(c.args[k]) ? c.args[k].join('، ') : c.args[k]) + '</pre>'; }).join('');
+        h += '<input id="apNote" size="30" placeholder="سبب القرار (يُحفظ في السجل)"><div class="bar"><button id="apYes" type="button">وافق</button><button id="apNo" class="bad" type="button">ارفض</button></div></div>';
+      }
+      if (run.status === 'asked') h += '<div class="pending"><b>الوكيل توقف ويسألك:</b><pre>' + esc(run.question) + '</pre></div>';
+      if (run.final) h += '<div class="note"><b>الرسالة الختامية للوكيل:</b><pre>' + esc(run.final) + '</pre></div>';
+      if (run.error) h += '<div class="note warn">' + esc(run.error) + '</div>';
+    } else h += '<p>لم يبدأ تشغيل بعد. راجع الموجز والصلاحيات ثم شغّل.</p>';
+    h += '</section><section class="panel"><h2>بعد التشغيل</h2><div class="bar"><button id="score" class="alt" type="button">قارن التقرير بالمصادر</button><button id="verify" class="alt" type="button">تحقق: هل انتظر كل ما لا رجعة فيه الموافقة؟</button></div><div id="after"></div></section>';
+    return h;
+  }
+  function vLog() {
+    var runs = st.runs.map(function (r) { return r.id; }), rows = st.log.filter(function (e) { return !logRun || e.run === logRun; });
+    var h = '<section class="panel"><h2>سجل التشغيل</h2><div class="bar"><select id="logRun"><option value="">كل السجل</option>' + runs.map(function (r) { return '<option' + (logRun === r ? ' selected' : '') + '>' + r + '</option>'; }).join('') + '</select><button id="dlTxt" class="alt" type="button">نزّل السجل نصًا</button><button id="dlJson" class="alt" type="button">نزّل السجل والموافقات بصيغة JSON</button></div>';
+    h += '<div class="scroll"><table><tr><th>#</th><th>الوقت</th><th>التشغيل</th><th>الحدث</th><th>التفاصيل</th></tr>' + rows.map(function (e) { return '<tr class="k-' + e.kind + '"><td>' + e.n + '</td><td class="l">' + SB.stamp(e.t).slice(11) + '</td><td>' + (e.run || '') + '</td><td>' + (SB.KIND_AR[e.kind] || e.kind) + '</td><td class="l" dir="auto">' + esc(SB.lineOf(e)) + '</td></tr>'; }).join('') + '</table></div></section>';
+    h += '<section class="panel"><h2>سجل الموافقات: من وافق على ماذا</h2><div class="scroll"><table><tr><th>الإجراء</th><th>التفاصيل</th><th>القرار</th><th>بواسطة</th><th>بعد (ثانية)</th><th>السبب</th></tr>' + (st.approvals.map(function (a) { return '<tr><td>' + SB.ACTIONS[a.action] + '</td><td class="l" dir="auto">' + esc(a.tool + ' ' + JSON.stringify(a.args)).slice(0, 220) + '</td><td>' + (a.decision === 'approved' ? '<span class="ok">موافقة</span>' : a.decision === 'rejected' ? '<span class="no">رفض</span>' : '<span class="wait">ينتظر</span>') + '</td><td>' + esc(a.by || '') + '</td><td>' + (a.decided ? Math.round((a.decided - a.requested) / 1000) : '') + '</td><td>' + esc(a.note || '') + '</td></tr>'; }).join('') || '<tr><td colspan="6">لا طلبات موافقة بعد.</td></tr>') + '</table></div></section>';
+    return h;
+  }
+  function vSched() {
+    var h = '<section class="panel"><h2>التشغيل المجدول</h2><p>يشغّل الصندوق المهمة المحددة في «المهمة والموجز» كل عدد من الدقائق ما دامت هذه الصفحة مفتوحة، ولو كنت في تبويب آخر. ما يحتاج إلى موافقة ينتظرك في «التشغيل».</p>';
+    h += '<div class="bar">كل <input id="every" type="number" min="1" value="2" style="width:5em"> دقيقة <button id="schedAdd" type="button">جدوِل</button></div>';
+    h += '<div class="scroll"><table><tr><th>#</th><th>المهمة</th><th>كل (دقيقة)</th><th>التشغيلات</th><th>الحالة</th><th></th></tr>' + (st.schedules.map(function (s) { return '<tr><td>' + s.id + '</td><td>' + esc(WD.TASKS[s.task] ? WD.TASKS[s.task].label : s.task) + '</td><td>' + s.every + '</td><td>' + s.runs + '</td><td>' + (s.active ? '<span class="ok">نشطة</span>' : '<span class="no">موقوفة</span>') + '</td><td><button class="alt" data-sched="' + s.id + '" type="button">' + (s.active ? 'أوقف' : 'فعّل') + '</button></td></tr>'; }).join('') || '<tr><td colspan="6">لا جدولة.</td></tr>') + '</table></div></section>';
+    return h;
+  }
+  function vBox() {
+    var w = st.world, h = '<section class="panel"><h2>البريد</h2><label style="font-weight:400"><input type="checkbox" id="asRead"' + (showRead ? ' checked' : '') + '> اعرض كل رسالة وملف كما يقرؤه الوكيل، لا كما تراه العين</label>';
+    h += w.mail.map(function (m) { return '<details><summary>' + ltr(m.id) + ' · ' + ltr(m.folder) + ' · ' + esc(m.fromName || m.from) + ' · ' + esc(m.subject) + '</summary><p><small>' + ltr(m.from) + (m.to ? ' ← ' + ltr(m.to) : '') + ' · ' + esc(m.date) + '</small></p><pre>' + esc(m.body) + (m.hidden && showRead ? '\n<span class="hid">' + esc(m.hidden) + '</span>' : '') + '</pre></details>'; }).join('');
+    h += '<h3>ما أُرسل فعلًا</h3>' + (w.sent.map(function (s) { return '<pre>' + (s.external ? '<span class="hid">إلى خارج المؤسسة: </span>' : 'إلى: ') + ltr(s.to) + ' · ' + esc(s.subject) + '</pre>'; }).join('') || '<p>لا شيء.</p>') + '</section>';
+    h += '<section class="panel"><h2>الملفات</h2>' + Object.keys(w.files).sort().map(function (p) { var f = w.files[p]; return '<details><summary>' + ltr(p) + ' · <small>' + esc(f.cls) + (f.by_agent ? ' · كتبه الوكيل' : '') + '</small></summary>' + (f.image && !showRead ? '<p>' + esc(f.seen) + ' <small>(الملف نفسه في حزمة الملفات: كبّره وانظر أسفله.)</small></p>' : '<pre dir="auto">' + esc(f.text) + '</pre>') + '</details>'; }).join('');
+    h += '<h3>ما حُذف</h3><p>' + (w.deleted.map(ltr).join('، ') || 'لا شيء.') + '</p><h3>صفحة الإعلانات: ما نُشر</h3><p>' + (w.published.map(ltr).join('، ') || 'لا شيء.') + '</p>';
+    h += '<h3>أضف ملفًا اصطناعيًا من عندك</h3><div class="bar"><input id="nfPath" class="ltr" size="24" placeholder="mytask/notes.md"><button id="nfAdd" class="alt" type="button">أضف</button></div><textarea id="nfText" placeholder="نص اصطناعي أو مجهول الهوية فقط"></textarea></section>';
+    h += '<section class="panel"><h2>التقويم</h2><ul>' + w.calendar.map(function (e) { return '<li>' + ltr(e.id) + ' · ' + esc(e.title) + ' · ' + esc(e.date) + (e.invitees.length ? ' · المدعوون: ' + e.invitees.map(ltr).join('، ') : '') + '</li>'; }).join('') + '</ul>';
+    h += '<h2>المدفوعات</h2><ul>' + w.payments.map(function (p) { return '<li>' + ltr(p.id) + ' · ' + esc(p.payee) + ' · ' + p.amount + ' ريال · ' + p.due + (p.paid ? ' · <span class="no">صُرفت</span>' : '') + '</li>'; }).join('') + '</ul><h3>ما صُرف فعلًا</h3><p>' + (w.paid.map(function (p) { return esc(p.payee) + ': ' + p.amount + ' ريال'; }).join('، ') || 'لا شيء.') + '</p></section>';
+    return h;
+  }
+  function vMem() {
+    return '<section class="panel"><h2>ذاكرة الوكيل: السياق الدائم</h2><p>أسطر يقرؤها الوكيل في أول كل تشغيل. من يملك الكتابة فيها يوجّه كل تشغيل قادم.</p><ol>' + st.world.memory.map(function (l, i) { return '<li>' + esc(l) + ' <button class="bad" data-mem="' + i + '" type="button">احذف السطر</button></li>'; }).join('') + '</ol></section>';
+  }
+
+  function draw() {
+    $('agentName').textContent = agentKind() === 'hosted' ? 'نموذج مستضاف' : 'الوكيل المكتوب';
+    $('tabs').innerHTML = TABS.map(function (t) { return '<button type="button" role="tab" aria-selected="' + (tab === t[0]) + '" data-tab="' + t[0] + '">' + t[1] + (t[0] === 'run' && run && (run.status === 'waiting' || run.status === 'asked') ? ' ●' : '') + '</button>'; }).join('');
+    $('view').innerHTML = { brief: vBrief, perms: vPerms, run: vRun, log: vLog, sched: vSched, box: vBox, mem: vMem }[tab]();
+  }
+
+  /* ---------- actions ---------- */
+  async function go(trigger) {
+    if (run && (run.status === 'running' || run.status === 'waiting')) return;
+    if (setup.task === 'own' && agentKind() !== 'hosted') { tab = 'run'; draw(); $('view').insertAdjacentHTML('afterbegin', '<p class="note warn">الوكيل المكتوب يعرف مهمتَي بَيدر فقط. مهمة من عملك تحتاج إلى نموذج مستضاف يوفره المدرب، أو إلى وضع الوكيل في المساعد المعتمد في جهتك.</p>'); return; }
+    model = makeModel();
+    var req = setup.task === 'own' ? '' : WD.TASKS[setup.task].request;
+    run = SB.startRun(st, { task: setup.task, brief: setup.thin ? null : setup.brief, request: req, trigger: trigger || 'manual' });
+    await step();
+  }
+  async function step() {
+    try { await SB.advance(st, run, model); }
+    catch (e) { run.status = 'failed'; run.error = 'تعذر الاتصال بالنموذج المستضاف: ' + e.message + '. تحقق من العنوان والمعرّف والمفتاح، أو عد إلى الوكيل المكتوب.'; SB.addLog(st, run, 'error', { text: run.error }); }
+    draw();
+  }
+  document.addEventListener('click', async function (ev) {
+    var b = ev.target.closest('button'); if (!b) return;
+    var d = b.dataset;
+    if (tab === 'brief') readBrief();
+    if (d.tab) { tab = d.tab; draw(); return; }
+    if (b.id === 'load') { await load($('preset').value); return; }
+    if (!st) return;
+    if (b.id === 'chk') { var r = SB.checkBrief(setup.brief); $('chkOut').innerHTML = '<p><b>' + r.met + ' من ' + r.of + '</b></p><ul>' + r.items.map(function (i) { return '<li>' + (i.ok ? '<span class="ok">مستوفى</span>' : '<span class="no">ناقص</span>') + ' · ' + esc(i.label) + (i.ok ? '' : ': ' + esc(i.why)) + '</li>'; }).join('') + '</ul><p><small>الفحص يعدّ البنود ولا يحكم على جودتها: الحكم لك ولزميلك.</small></p>'; return; }
+    if (b.id === 'saveBrief') { download('brief.txt', SB.briefText(setup.brief, '') + '\n'); return; }
+    if (d.revoke) SB.revoke(st, d.revoke, who());
+    if (b.id === 'gAdd') { var runs = parseInt($('gR').value, 10); SB.grant(st, $('gC').value, $('gS').value, $('gF').value.trim() || '*', { by: who(), except: $('gX').value.trim(), runs_left: runs > 0 ? runs : null }); }
+    if (b.id === 'gAll') Object.keys(SB.CONNECTORS).forEach(function (c) { SB.grant(st, c, 'act', '*', { by: who() }); });
+    if (b.id === 'go') { await go('manual'); return; }
+    if (b.id === 'resetWorld') { var keep = st, fresh = SB.newState(keep.world.day); keep.world = fresh.world; SB.addLog(st, null, 'note', { text: 'أُعيد الصندوق إلى حالته الأولى', by: who() }); }
+    if (b.id === 'apYes' || b.id === 'apNo') { SB.decide(st, run, b.id === 'apYes', who(), $('apNote').value); await step(); return; }
+    if (b.id === 'score') {
+      var p = st.world.files['reports/weekly_46_draft.md'] ? 'reports/weekly_46_draft.md' : 'reports/weekly_46.md', f = st.world.files[p];
+      if (!f) { $('after').innerHTML = '<p class="no">لا تقرير في مجلد reports بعد.</p>'; return; }
+      var sc = SB.scoreReport(f.text);
+      $('after').innerHTML = '<p>الملف ' + ltr(p) + ': <b>' + sc.right + ' من ' + sc.of + '</b> بنود تطابق المصادر.</p><div class="scroll"><table><tr><th>البند</th><th>في التقرير</th><th>في المصادر</th><th>المصدر</th><th></th></tr>' + sc.items.map(function (i) { return '<tr><td>' + esc(i.label) + '</td><td>' + esc(i.found) + '</td><td>' + esc(i.want) + '</td><td dir="auto">' + esc(i.source) + '</td><td>' + (i.ok ? '<span class="ok">يطابق</span>' : '<span class="no">لا يطابق</span>') + '</td></tr>'; }).join('') + '</table></div>';
+      return;
+    }
+    if (b.id === 'verify') { var v = SB.verifyLog(st.log, run ? run.id : ''); $('after').innerHTML = '<p>' + (v.ok ? '<span class="ok">كل إجراء لا رجعة فيه انتظر الموافقة.</span>' : '<span class="no">نُفّذ بلا موافقة: ' + esc(v.unapproved.join('، ')) + '</span>') + '</p><p>طلبات الأدوات: ' + v.calls + ' · المرفوض بالصلاحية: ' + v.denied + ' · طلبات الموافقة: ' + v.requested + ' · الموافَق عليه: ' + v.approved + ' · المرفوض منك: ' + v.rejected + ' · ما نُفّذ مما لا رجعة فيه: ' + v.irreversible + '</p>'; return; }
+    if (b.id === 'dlTxt') { download('run_log.txt', SB.logText(st.log)); return; }
+    if (b.id === 'dlJson') { download('run_log.json', JSON.stringify({ log: st.log, approvals: st.approvals, grants: st.grants }, null, 1), 'application/json'); return; }
+    if (b.id === 'schedAdd') SB.schedule(st, setup.task, Math.max(1, parseInt($('every').value, 10) || 2), who());
+    if (d.sched) st.schedules.forEach(function (s) { if (s.id === d.sched) s.active = !s.active; });
+    if (d.mem) { var gone = st.world.memory.splice(Number(d.mem), 1); SB.addLog(st, null, 'note', { text: 'حُذف سطر من الذاكرة: ' + gone[0], by: who() }); }
+    if (b.id === 'nfAdd' && $('nfPath').value.trim()) st.world.files[$('nfPath').value.trim()] = { cls: 'أضافه المشارك', text: $('nfText').value };
+    draw();
+  });
+  document.addEventListener('change', function (ev) {
+    var t = ev.target;
+    if (!st) return;
+    if (t.dataset.ap) { st.approve[t.dataset.ap] = t.checked; SB.addLog(st, null, 'note', { text: 'الموافقة قبل ' + SB.ACTIONS[t.dataset.ap] + ': ' + (t.checked ? 'مفعّلة' : 'معطّلة'), by: who() }); }
+    if (t.id === 'rcp') { st.recipients = t.value; SB.addLog(st, null, 'note', { text: 'المستلمون: ' + (t.value === 'internal' ? 'عناوين المؤسسة فقط' : 'أي عنوان'), by: who() }); }
+    if (t.id === 'asRead') { showRead = t.checked; draw(); }
+    if (t.id === 'logRun') { logRun = t.value; draw(); }
+    if (t.id === 'task' || t.id === 'thin') { readBrief(); draw(); }
+    if (t.name === 'agent') draw();
+  });
+  setInterval(function () {
+    if (!st) return;
+    SB.due(st).forEach(function (s) { if (!run || (run.status !== 'running' && run.status !== 'waiting')) { var keep = setup.task; setup.task = s.task; go('schedule'); setup.task = keep; } });
+  }, 5000);
+
+  $('preset').innerHTML = SB.PRESETS.map(function (p) { return '<option value="' + p[0] + '">' + p[1] + '</option>'; }).join('');
+  var want = (location.hash || '').replace('#', '');
+  if (SB.PRESETS.some(function (p) { return p[0] === want; })) $('preset').value = want;
+  load($('preset').value);
+})();
+</script>
+</body>
+</html>
