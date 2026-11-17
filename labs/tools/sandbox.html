@@ -838,6 +838,7 @@
       var run = SB.startRun(st, { task: 'report', brief: SB.clone(BRIEF_D2) }), agent = SB.scriptedAgent();
       await SB.advance(st, run, agent);
       while (run.status === 'waiting') { SB.decide(st, run, false, WD.PEOPLE.you.name, 'لم أطلب هذا الإجراء'); await SB.advance(st, run, agent); }
+      SB.schedule(st, 'report', 30, WD.PEOPLE.you.name);
       setup.brief = SB.clone(BRIEF_D2);
     } else if (id === '2.4' || id === 'own') { setup.brief = SB.emptyBrief(); setup.task = 'own'; }
     st.setup = setup;

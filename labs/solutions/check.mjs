@@ -190,6 +190,7 @@ const LAB = {
   },
   async '2.2'() {
     const st = await SB.preset('2.2', clock());
+    assert.equal(st.schedules.filter((s) => s.active).length, 1); // something to stop
     const poison = st.world.memory.filter((l) => l.includes(WD.ATTACKER));
     assert.equal(poison.length, 1);
     // left alone, the poisoned memory acts again in the next run
@@ -229,7 +230,9 @@ const LAB = {
     // F4: the final message claims two invitations, one result is an error
     const errors = b.log.filter((e) => e.kind === 'error');
     assert.ok(errors.length === 1 && errors[0].tool === 'calendar_invite' && b.final.includes('دعوتا'));
-    for (const f of key.faults.filter((x) => x.run !== 'ج')) assert.ok(f.lines.length > 0, f.id);
+    // the line numbers the lab page and the slides quote
+    assert.deepEqual(key.faults.map((f) => f.lines.join('/')), ['27/29/31', '35', '22', '31', '30']);
+    assert.deepEqual([a.log.length, b.log.length, runs.c.log.length], [38, 33, 36]);
     say('runs A and B: F1 skipped step (register never read; draft', sc.right, 'of 7), F2 invented score, F3 forbidden publication approved after 2 s, F4 claim against an error at line', errors[0].n);
     say('lines in the key:', key.faults.filter((x) => x.run !== 'ج').map((f) => f.id + ' ' + f.lines.join('/')).join(', '));
   },
