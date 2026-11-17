@@ -541,6 +541,8 @@
     { key: 'check', label: 'التحقق قبل الانتهاء: ما يطابقه ويعرضه قبل أن يقول «تم»' }
   ];
   function emptyBrief() { return { goal: '', context: '', sources: [], forbidden: [], forbidden_note: '', stop: '', format: '', check: '' }; }
+  /* Arabic text without marks and with one form of alef, so that a stem matches however it was typed */
+  function plain(s) { return String(s || '').replace(/[ً-ْـ]/g, '').replace(/[أإآ]/g, 'ا'); }
   function words(s) { return String(s || '').trim().split(/\s+/).filter(Boolean).length; }
   function checkBrief(b) {
     b = b || emptyBrief();
@@ -562,8 +564,8 @@
     return {
       sources: b.sources || [],
       no_send: (b.forbidden || []).indexOf('send') >= 0,
-      stop_missing: /ناقص|مفقود|غير موجود|لا تجد|لم تجد|غير متوفر|غائب/.test(b.stop || ''),
-      stop_conflict: /تعارض|اختلف|يختلف|تناقض|تضارب/.test(b.stop || ''),
+      stop_missing: /ناقص|نقص|مفقود|فقد|موجود|متوفر|متاح|تجد|يجد|اجد|غاب|غائب|غياب|يرد|مصدر له|بلا مصدر|دون مصدر|في المصادر|في مصدر|من المصادر/.test(plain(b.stop)),
+      stop_conflict: /تعارض|اختلف|اختلاف|يختلف|تختلف|تناقض|تضارب|يطابق|تطابق|متطابق|رقمين|رقمان|مصدرين|مصدران/.test(plain(b.stop)),
       format: words(b.format) >= 4, check: words(b.check) >= 4
     };
   }
@@ -992,7 +994,7 @@
     if (d.tab) { tab = d.tab; draw(); return; }
     if (b.id === 'load') { await load($('preset').value); return; }
     if (!st) return;
-    if (b.id === 'chk') { var r = SB.checkBrief(setup.brief); $('chkOut').innerHTML = '<p><b>' + r.met + ' من ' + r.of + '</b></p><ul>' + r.items.map(function (i) { return '<li>' + (i.ok ? '<span class="ok">مستوفى</span>' : '<span class="no">ناقص</span>') + ' · ' + esc(i.label) + (i.ok ? '' : ': ' + esc(i.why)) + '</li>'; }).join('') + '</ul><p><small>الفحص يعدّ البنود ولا يحكم على جودتها: الحكم لك ولزميلك.</small></p>'; return; }
+    if (b.id === 'chk') { var r = SB.checkBrief(setup.brief); $('chkOut').innerHTML = '<p><b>' + r.met + ' من ' + r.of + '</b></p><ul>' + r.items.map(function (i) { return '<li>' + (i.ok ? '<span class="ok">مستوفى</span>' : '<span class="no">ناقص</span>') + ' · ' + esc(i.label) + (i.ok ? '' : ': ' + esc(i.why)) + '</li>'; }).join('') + '</ul><p><small>الفحص يعدّ البنود ولا يحكم على جودتها: الحكم لك ولزميلك.</small></p>' + (function () { var F = SB.features(setup.brief), yn = function (x) { return x ? '<span class="ok">نعم</span>' : '<span class="no">لا</span>'; }; return '<div class="note"><b>ما سيأخذه الوكيل المكتوب من موجزك</b> (نموذج حقيقي يقرأ النص كله): يتوقف عند رقم ناقص: ' + yn(F.stop_missing) + ' · يتوقف عند تعارض مصدرين: ' + yn(F.stop_conflict) + ' · يذكر مصدر كل بند: ' + yn(F.format) + ' · يطابق ويذكر ما رُفض قبل أن ينهي: ' + yn(F.check) + ' · لا يحاول الإرسال: ' + yn(F.no_send) + '</div>'; })(); return; }
     if (b.id === 'saveBrief') { download('brief.txt', SB.briefText(setup.brief, '') + '\n'); return; }
     if (d.revoke) SB.revoke(st, d.revoke, who());
     if (b.id === 'gAdd') { var runs = parseInt($('gR').value, 10); SB.grant(st, $('gC').value, $('gS').value, $('gF').value.trim() || '*', { by: who(), except: $('gX').value.trim(), runs_left: runs > 0 ? runs : null }); }

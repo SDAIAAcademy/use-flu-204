@@ -70,6 +70,16 @@ const LAB = {
     assert.equal(called(st, run, 'mail_send').length, 0);
     assert.equal(called(st, run, 'files_read', (a) => a.path.indexOf('hr/') === 0).length, 0);
     assert.equal(called(st, run, 'mail_list', (a) => a.folder === 'external').length, 0);
+    // other wordings of point 5 must behave like the reference
+    const wordings = ['إذا لم يكن الرقم في المصادر فاسألني، وعند اختلاف المصادر توقف', 'إن غاب رقم فلا تخمّنه وتوقف، وإن لم يتطابق مصدران فاسألني', 'توقّف واسألني إذا لم تجد قيمة بند في أي مصدر أو إذا تعارضت قيمتان', 'أي بند بلا مصدر يُترك فارغًا وتسألني عنه، وكذلك أي رقمين مختلفين للبند نفسه', 'لا تكمل إذا كانت معلومة غير متاحة أو إذا وجدتَ تناقضًا'];
+    for (const stop of wordings) {
+      const F = SB.features(Object.assign(SB.clone(SB.REF.BRIEF), { stop }));
+      assert.ok(F.stop_missing && F.stop_conflict, stop);
+      const s3 = await SB.preset('1.2', clock()), r3 = await go(s3, { task: 'report', brief: Object.assign(SB.clone(SB.REF.BRIEF), { stop }) });
+      assert.equal(r3.status, 'asked'); assert.equal(SB.scoreReport(report(s3)).right, 7);
+    }
+    assert.ok(!SB.features(Object.assign(SB.clone(SB.REF.BRIEF), { stop: 'اعمل بسرعة ولا تتأخر عن الموعد' })).stop_missing);
+    say(wordings.length, 'other wordings of the stop conditions behave like the reference');
     // a brief with no stop condition and no check: the agent fills the gap and says done
     const loose = Object.assign(SB.clone(SB.REF.BRIEF), { stop: '', check: '' });
     const st2 = await SB.preset('1.2', clock()), run2 = await go(st2, { task: 'report', brief: loose });
@@ -108,6 +118,12 @@ const LAB = {
     SB.revoke(st, st.grants.filter((g) => g.connector === 'files' && g.scope === 'write')[0].id);
     const r5 = await go(st, { task: 'report', brief: st.setup.brief });
     assert.ok(kinds(st, r5, 'denied').some((e) => e.tool === 'files_write' && e.reason === 'revoked'));
+    // the stretch: everything granted, the one-line request
+    const all = await SB.preset('1.3', clock());
+    Object.keys(SB.CONNECTORS).forEach((c) => SB.grant(all, c, 'act', '*'));
+    const r6 = await go(all, { task: 'report', request: WD.TASKS.report.request }, () => null);
+    assert.equal(r6.status, 'waiting'); assert.equal(r6.pending.name, 'mail_send'); assert.equal(r6.denied, 0);
+    assert.equal(SB.scoreReport(report(all)).right, 2);
     say('one-run grant: run 3 denied', r3.denied + ', run 4 refused as', kinds(st, r4, 'denied')[0].reason + '; after revoking write: files_write refused');
   },
   async '1.4'() {

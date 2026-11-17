@@ -300,6 +300,8 @@
     { key: 'check', label: 'التحقق قبل الانتهاء: ما يطابقه ويعرضه قبل أن يقول «تم»' }
   ];
   function emptyBrief() { return { goal: '', context: '', sources: [], forbidden: [], forbidden_note: '', stop: '', format: '', check: '' }; }
+  /* Arabic text without marks and with one form of alef, so that a stem matches however it was typed */
+  function plain(s) { return String(s || '').replace(/[ً-ْـ]/g, '').replace(/[أإآ]/g, 'ا'); }
   function words(s) { return String(s || '').trim().split(/\s+/).filter(Boolean).length; }
   function checkBrief(b) {
     b = b || emptyBrief();
@@ -321,8 +323,8 @@
     return {
       sources: b.sources || [],
       no_send: (b.forbidden || []).indexOf('send') >= 0,
-      stop_missing: /ناقص|مفقود|غير موجود|لا تجد|لم تجد|غير متوفر|غائب/.test(b.stop || ''),
-      stop_conflict: /تعارض|اختلف|يختلف|تناقض|تضارب/.test(b.stop || ''),
+      stop_missing: /ناقص|نقص|مفقود|فقد|موجود|متوفر|متاح|تجد|يجد|اجد|غاب|غائب|غياب|يرد|مصدر له|بلا مصدر|دون مصدر|في المصادر|في مصدر|من المصادر/.test(plain(b.stop)),
+      stop_conflict: /تعارض|اختلف|اختلاف|يختلف|تختلف|تناقض|تضارب|يطابق|تطابق|متطابق|رقمين|رقمان|مصدرين|مصدران/.test(plain(b.stop)),
       format: words(b.format) >= 4, check: words(b.check) >= 4
     };
   }
